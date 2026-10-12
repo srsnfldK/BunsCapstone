@@ -1,8 +1,17 @@
 
 const express = require("express");
+const path = require("path");
 const app = express();
 
+// Firebase Authentication
+const verifyToken = require("./authMiddleware");
+
 app.use(express.json());
+
+// Serve the Firebase login test page
+app.get("/login-test.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "login-test.html"));
+});
 
 const PORT = 3000;
 
@@ -18,8 +27,8 @@ app.get("/", (req, res) => {
   res.send("PantrySync Backend is Running!");
 });
 
-// View ingredients
-app.get("/ingredients", (req, res) => {
+// View ingredients (Firebase login required)
+app.get("/ingredients", verifyToken, (req, res) => {
   res.json(ingredients);
 });
 
@@ -56,3 +65,4 @@ app.post("/ingredients", (req, res) => {
 app.listen(PORT, () => {
   console.log(`PantrySync running at http://localhost:${PORT}`);
 });
+
