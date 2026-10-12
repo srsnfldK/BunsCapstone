@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BunsCapstone - Recipe Stock Check</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/recipes.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1>Recipe Stock Check</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/ingredients">Ingredients</a>
+            <a href="/recipes">Recipes</a>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Do we have enough to make this?</h2>
+
+        <form id="check-form" class="card check-form">
+            <label>
+                Recipe
+                <select id="recipe-select" required>
+                    <option value="">Loading recipes...</option>
+                </select>
+            </label>
+
+            <label>
+                Batches
+                <input id="batches" type="number" min="0.5" step="0.5" value="1" required>
+            </label>
+
+            <button type="submit">Check stock</button>
+        </form>
+
+        <p id="result-message"></p>
+
+        <table id="check-table" hidden>
+            <thead>
+                <tr>
+                    <th>Ingredient</th>
+                    <th>Needed</th>
+                    <th>On hand</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="check-body"></tbody>
+        </table>
+    </main>
+</body>
+</html>
