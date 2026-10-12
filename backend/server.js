@@ -7,6 +7,9 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Firebase Authentication
+const verifyToken = require("./authMiddleware");
+
 app.use(express.json());
 
 // Serve frontend files from the frontend folder
@@ -16,6 +19,12 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
+// Serve the Firebase login test page
+app.get("/login-test.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "login-test.html"));
+});
+
+const PORT = 3000;
 
 // Sample inventory data
 let ingredients = [
@@ -30,6 +39,13 @@ app.get("/ingredients", (req, res) => {
 });
 
 app.get("/api/ingredients", (req, res) => {
+// Home page
+app.get("/", (req, res) => {
+  res.send("PantrySync Backend is Running!");
+});
+
+// View ingredients (Firebase login required)
+app.get("/ingredients", verifyToken, (req, res) => {
   res.json(ingredients);
 });
 
@@ -66,3 +82,4 @@ app.post("/ingredients", (req, res) => {
 app.listen(PORT, () => {
   console.log(`PantrySync running at http://localhost:${PORT}`);
 });
+

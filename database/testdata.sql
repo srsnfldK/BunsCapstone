@@ -1,6 +1,6 @@
 -- Test data for PantrySync Database
 -- Run this file after schema.sql
--- Run reset.sql if scehma.sql already has populated tables
+-- Run reset.sql if schema.sql already has populated tables
 
 USE psdb;
 
@@ -28,3 +28,32 @@ INSERT INTO recipe (name, description, instructions, servings, created_by)
 VALUES
     ('Blueberry Muffins TEST', 'TEST - Blueberry muffin recipe', 'Place holder instructions', 16, 1),
     ('Chocolate Cake TEST', 'TEST - Chocolate recipe test', 'Place holder instructions', 1, 2);
+
+-- recipe ingredient table
+INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity, unit)
+VALUES
+    (1, 1, 0.50, 'kg'),
+    (1, 2, 0.25, 'kg'),
+    (1, 3, 100.00, 'g'),
+    (1, 4, 2.00, 'count'),
+    (2, 1, 0.40, 'kg');
+
+-- inventory transaction table
+INSERT INTO inventory_transaction (inventory_id, ingredient_id, user_id, type, quantity_change, notes)
+VALUES
+    (1, 1, 2, 'add', 20.00, 'TEST - Initial flour stock'),
+    (1, 1, 1, 'use', -0.50, 'TEST - Used in Blueberry Muffins'),
+    (1, 3, 1, 'use', -100.00, 'TEST - Used in Blueberry Muffins'),
+    (1, 4, 1, 'use', -2.00, 'TEST - Used in Blueberry Muffins');
+
+-- receipt table
+INSERT INTO receipt (user_id, inventory_id, image_url, status, total)
+VALUES
+    (1, 1, 'receiptTEST1.jpg', 'pending', 10.00),
+    (1, 1, 'receiptTEST2.jpg', 'confirmed', 20.00);
+
+-- notification
+INSERT INTO notification (user_id, ingredient_id, message, type, is_read)
+VALUES
+    (2, 4, 'TEST - Eggs are running low', 'low_stock', FALSE),
+    (1, 4, 'TEST - Eggs are running low', 'low_stock', TRUE);
