@@ -1,13 +1,24 @@
 
 const express = require("express");
 const path = require("path");
+const pool = require("./db");
+require("dotenv").config();
+
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 // Firebase Authentication
 const verifyToken = require("./authMiddleware");
 
 app.use(express.json());
 
+// Serve frontend files from the frontend folder
+app.use(express.static(path.join(__dirname, "../frontend")));
+
+//Home page
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+});
 // Serve the Firebase login test page
 app.get("/login-test.html", (req, res) => {
   res.sendFile(path.join(__dirname, "login-test.html"));
@@ -22,6 +33,12 @@ let ingredients = [
   { id: 3, name: "Eggs", quantity: 36, unit: "count" }
 ];
 
+// View ingredients
+app.get("/ingredients", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/ingredients.html"));
+});
+
+app.get("/api/ingredients", (req, res) => {
 // Home page
 app.get("/", (req, res) => {
   res.send("PantrySync Backend is Running!");
