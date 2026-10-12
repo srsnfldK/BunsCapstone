@@ -1,10 +1,21 @@
 
 const express = require("express");
+const path = require("path");
+const pool = require("./db");
+require("dotenv").config();
+
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-const PORT = 3000;
+// Serve frontend files from the frontend folder
+app.use(express.static(path.join(__dirname, "../frontend")));
+
+//Home page
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+});
 
 // Sample inventory data
 let ingredients = [
@@ -13,13 +24,12 @@ let ingredients = [
   { id: 3, name: "Eggs", quantity: 36, unit: "count" }
 ];
 
-// Home page
-app.get("/", (req, res) => {
-  res.send("PantrySync Backend is Running!");
-});
-
 // View ingredients
 app.get("/ingredients", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/ingredients.html"));
+});
+
+app.get("/api/ingredients", (req, res) => {
   res.json(ingredients);
 });
 
