@@ -8,12 +8,12 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  role VARCHAR(20) NOT NULL DEFAULT 'staff',
+  role VARCHAR(20) NOT NULL DEFAULT 'user',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
---inventory table
+-- inventory table
 CREATE TABLE IF NOT EXISTS inventory (
   inventory_id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS recipe_ingredient (
   FOREIGN KEY (ingredient_id) REFERENCES ingredient(ingredient_id)
 );
 
---inventory transcation table
+-- inventory transcation table
 CREATE TABLE IF NOT EXISTS inventory_transaction (
   transaction_id INT AUTO_INCREMENT PRIMARY KEY,
   inventory_id INT NOT NULL,
