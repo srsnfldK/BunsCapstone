@@ -15,8 +15,13 @@
   </form>
 
   <button id="logoutButton" type="button">Log Out</button>
+
   <button id="ingredientsButton" type="button">
     View Ingredients
+  </button>
+
+  <button id="addIngredientButton" type="button">
+    Test Add Ingredient
   </button>
 
   <pre id="result">Not logged in.</pre>
@@ -32,7 +37,7 @@
     } from
       "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
-    // Correct PantrySync Firebase configuration
+    // PantrySync Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDMa6TXMIInBlf9w7HzI2Bc_sBMpj_bmp4",
       authDomain: "pantrysync-62d6b.firebaseapp.com",
@@ -47,7 +52,7 @@
     const auth = getAuth(app);
     const result = document.getElementById("result");
 
-    // Log in
+    // Log in with Firebase
     document.getElementById("loginForm")
       .addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -63,7 +68,7 @@
         }
       });
 
-    // View protected ingredients
+    // View ingredients from MySQL
     document.getElementById("ingredientsButton")
       .addEventListener("click", async () => {
         const user = auth.currentUser;
@@ -76,7 +81,7 @@
         try {
           const token = await user.getIdToken();
 
-          const response = await fetch("/ingredients", {
+          const response = await fetch("/api/ingredients", {
             headers: {
               Authorization: "Bearer " + token
             }
@@ -84,13 +89,64 @@
 
           const data = await response.json();
 
+          if (!response.ok) {
+            result.textContent =
+              "Unable to load ingredients:\n" +
+              JSON.stringify(data, null, 2);
+            return;
+          }
+
           result.textContent = JSON.stringify(data, null, 2);
         } catch (error) {
           result.textContent = "Request failed: " + error.message;
         }
       });
 
-    // Log out
+    // Add a test ingredient to MySQL
+    document.getElementById("addIngredientButton")
+      .addEventListener("click", async () => {
+        const user = auth.currentUser;
+
+        if (!user) {
+          result.textContent = "Please log in first.";
+          return;
+        }
+
+        try {
+          const token = await user.getIdToken();
+
+          const response = await fetch("/api/ingredients", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + token
+            },
+            body: JSON.stringify({
+              name: "Milk TEST",
+              quantity: 10,
+              unit: "L",
+              inventory_id: 1
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            result.textContent =
+              "Add failed:\n" +
+              JSON.stringify(data, null, 2);
+            return;
+          }
+
+          result.textContent =
+            "Ingredient added successfully!\n\n" +
+            JSON.stringify(data, null, 2);
+        } catch (error) {
+          result.textContent = "Request failed: " + error.message;
+        }
+      });
+
+    // Log out of Firebase
     document.getElementById("logoutButton")
       .addEventListener("click", async () => {
         try {
@@ -103,3 +159,4 @@
   </script>
 </body>
 </html>
+

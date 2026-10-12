@@ -1,57 +1,68 @@
 
+require("dotenv").config();
+
 const express = require("express");
 const path = require("path");
-const pool = require("./db");
-require("dotenv").config();
+const db = require("./db");
+const verifyToken = require("./authMiddleware");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Firebase Authentication
-const verifyToken = require("./authMiddleware");
-
 app.use(express.json());
 
-// Serve frontend files from the frontend folder
+// Serve frontend files
 app.use(express.static(path.join(__dirname, "../frontend")));
 
-//Home page
+// PantrySync homepage
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
-// Serve the Firebase login test page
+
+// Firebase login test page
 app.get("/login-test.html", (req, res) => {
   res.sendFile(path.join(__dirname, "login-test.html"));
 });
 
-const PORT = 3000;
-
-// Sample inventory data
-let ingredients = [
-  { id: 1, name: "Flour", quantity: 25, unit: "lbs" },
-  { id: 2, name: "Sugar", quantity: 10, unit: "lbs" },
-  { id: 3, name: "Eggs", quantity: 36, unit: "count" }
-];
-
-// View ingredients
+// Frontend ingredients page
 app.get("/ingredients", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/ingredients.html"));
 });
 
-app.get("/api/ingredients", (req, res) => {
-// Home page
-app.get("/", (req, res) => {
-  res.send("PantrySync Backend is Running!");
-});
+// Get ingredients from MySQL (Firebase login required)
+async function getIngredients(req, res) {
+  try {
+    const [ingredients] = await db.query(
+      `SELECT
+        ingredient_id AS id,
+        inventory_id,
+        name,
+        quantity,
+        unit,
+        reorder_level,
+        description
+       FROM ingredient
+       ORDER BY ingredient_id`
+    );
 
-// View ingredients (Firebase login required)
-app.get("/ingredients", verifyToken, (req, res) => {
-  res.json(ingredients);
-});
+    res.json(ingredients);
+  } catch (error) {
+    console.error("Error loading ingredients:", error.message);
+    res.status(500).json({
+      error: "Unable to load ingredients."
+    });
+  }
+}
 
-// Add a new ingredient
-app.post("/ingredients", (req, res) => {
-  const { name, quantity, unit } = req.body;
+// API route for ingredients
+app.get("/api/ingredients", verifyToken, getIngredients);
+
+// Keep the original API route for compatibility
+app.get("/ingredients", verifyToken, getIngredients);
+
+// Add an ingredient to MySQL (Firebase login required)
+async function addIngredient(req, res) {
+  const { name, quantity, unit, inventory_id = 1 } = req.body;
 
   if (
     typeof name !== "string" ||
@@ -60,25 +71,52 @@ app.post("/ingredients", (req, res) => {
     !Number.isFinite(quantity) ||
     quantity < 0 ||
     typeof unit !== "string" ||
-    !unit.trim()
+    !unit.trim() ||
+    !Number.isInteger(inventory_id) ||
+    inventory_id < 1
   ) {
     return res.status(400).json({
-      error: "Valid name, quantity, and unit are required."
+      error: "Valid name, quantity, unit, and inventory_id are required."
     });
   }
 
-  const ingredient = {
-    id: Math.max(0, ...ingredients.map(i => i.id)) + 1,
-    name: name.trim(),
-    quantity,
-    unit: unit.trim()
-  };
+  try {
+    const [result] = await db.execute(
+      `INSERT INTO ingredient
+       (inventory_id, name, quantity, unit, reorder_level)
+       VALUES (?, ?, ?, ?, ?)`,
+      [inventory_id, name.trim(), quantity, unit.trim(), 0]
+    );
 
-  ingredients.push(ingredient);
-  res.status(201).json(ingredient);
-});
+    res.status(201).json({
+      id: result.insertId,
+      inventory_id,
+      name: name.trim(),
+      quantity,
+      unit: unit.trim(),
+      reorder_level: 0
+    });
+  } catch (error) {
+    console.error("Error adding ingredient:", error.message);
 
-// Start server
+    if (error.code === "ER_NO_REFERENCED_ROW_2") {
+      return res.status(400).json({
+        error: "The specified inventory does not exist."
+      });
+    }
+
+    res.status(500).json({
+      error: "Unable to add ingredient."
+    });
+  }
+}
+
+app.post("/api/ingredients", verifyToken, addIngredient);
+
+// Keep the original POST route for compatibility
+app.post("/ingredients", verifyToken, addIngredient);
+
+// Start backend
 app.listen(PORT, () => {
   console.log(`PantrySync running at http://localhost:${PORT}`);
 });
