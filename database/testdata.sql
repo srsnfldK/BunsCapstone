@@ -5,11 +5,11 @@
 USE psdb;
 
 -- users table
-INSERT INTO users (name, email, password_hash, role, is_active)
+INSERT INTO users (name, email, firebase_uid, role, is_active)
 VALUES
-    ('Baker TEST', 'testbaker@email.com', 'hashtest1', 'user', TRUE),
-    ('Manager TEST', 'testmanager@email.com', 'hashtest2', 'manager', TRUE),
-    ('Unactive TEST', 'testunactive@email.com', 'hashtest3', 'user', FALSE);
+    ('Baker TEST', 'testbaker@email.com', 'test-firebase-uid-1', 'user', TRUE),
+    ('Manager TEST', 'testmanager@email.com', 'test-firebase-uid-2', 'manager', TRUE),
+    ('Unactive TEST', 'testunactive@email.com', 'test-firebase-uid-3', 'user', FALSE);
 
 -- inventory table
 INSERT INTO inventory (name, description)
