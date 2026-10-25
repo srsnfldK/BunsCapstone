@@ -67,6 +67,58 @@ async function loadIngredients(user) {
     });
 }
 
+//new ingredients func
+const newIngredientForm = document.getElementById("new-ingredient-form");
+if(newIngredientForm){
+
+    newIngredientForm.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
+        const messageElement = document.getElementById("new-ingredient-message");
+        const user = auth.currentUser;
+
+        if (!user) {
+            messageElement.textContent = "You must be logged in to add an ingredient.";
+            return;
+        }
+
+        //reading values entered in the form
+        const name = document.getElementById("new-ingredient-name").value.trim();
+        const quantity = Number(document.getElementById("new-stock-quantity").value);
+        const unit = document.getElementById("new-ingredient-unit").value;
+
+        //backend auth with firebase
+        try{
+
+            const token = await user.getIdToken();
+
+            const response = await fetch("/api/ingredients", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + token
+                },
+                body: JSON.stringify({ name, quantity, unit, inventory_id: 1 })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error);
+            }
+
+            messageElement.textContent = "Ingredient added successfully!";
+            newIngredientForm.reset();
+            await loadIngredients(user);
+
+        }catch (error) {
+            console.error("Error adding ingredient:", error);
+            messageElement.textContent = error.message;
+        }
+    });
+
+}
+
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         console.log("No Firebase user is logged in.");
@@ -87,3 +139,5 @@ onAuthStateChanged(auth, async (user) => {
         }
     }
 });
+
+
