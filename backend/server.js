@@ -62,7 +62,8 @@ app.get("/ingredients", verifyToken, getIngredients);
 
 // Add an ingredient to MySQL (Firebase login required)
 async function addIngredient(req, res) {
-  const { name, quantity, unit, inventory_id = 1 } = req.body;
+  const { name, quantity, unit, description = null, 
+  reorder_level = 0, inventory_id = 1 } = req.body;
 
   if (
     typeof name !== "string" ||
@@ -80,33 +81,63 @@ async function addIngredient(req, res) {
     });
   }
 
-  try {
-    const [result] = await db.execute(
-      `INSERT INTO ingredient
-       (inventory_id, name, quantity, unit, reorder_level)
-       VALUES (?, ?, ?, ?, ?)`,
-      [inventory_id, name.trim(), quantity, unit.trim(), 0]
-    );
+  try{
 
-    res.status(201).json({
-      id: result.insertId,
-      inventory_id,
-      name: name.trim(),
-      quantity,
-      unit: unit.trim(),
-      reorder_level: 0
-    });
-  } catch (error) {
+    const connection = await db.getConnection();
+
+    try {
+
+      await connection.beginTransaction();
+
+      const [result] = await connection.execute(
+        `INSERT INTO ingredient
+         (inventory_id, name, quantity, unit, reorder_level, description)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [inventory_id, name.trim(), quantity, unit.trim(), reorder_level, description]
+      );
+
+      if (quantity > 0) {
+        await connection.execute(
+          `INSERT INTO inventory_transaction
+           (inventory_id, ingredient_id, user_id, type, quantity_change, notes)
+           VALUES (?, ?, ?, 'add', ?, ?)`,
+          [inventory_id, result.insertId, 1, quantity, "Initial stock"]
+        );
+      }
+
+      await connection.commit();
+
+      res.status(201).json({
+        id: result.insertId,
+        inventory_id,
+        name: name.trim(),
+        quantity,
+        unit: unit.trim(),
+        reorder_level,
+        description
+      });
+    } catch (error) {
+      
+      await connection.rollback();
+      throw error;
+
+    }finally {
+      
+      connection.release();
+
+    }
+  }catch (error){
+
     console.error("Error adding ingredient:", error.message);
 
     if (error.code === "ER_NO_REFERENCED_ROW_2") {
       return res.status(400).json({
-        error: "The specified inventory does not exist."
+        error: "The specified inventory_id does not exist."
       });
     }
 
     res.status(500).json({
-      error: "Unable to add ingredient."
+      error: "An error occurred while adding the ingredient."
     });
   }
 }
@@ -178,18 +209,24 @@ async function addStock(req, res){
     );
 
     //adding to transaction history
-    await connection.execute(
+    const [transactionResult] = await connection.execute(
       `INSERT INTO inventory_transaction
-       (inventory_id, ingredient_id, user_id, type, quantity_change, notes)
-       VALUES (?, ?, ?, 'add', ?, ?)`,
-      [
-        ingredient.inventory_id,
-        ingredientId,
-        1,
-        quantity_change,
-        notes
-      ]
-    );
+      (inventory_id, ingredient_id, user_id, type, quantity_change, notes)
+      VALUES (?, ?, ?, 'add', ?, ?)`,
+    [
+      ingredient.inventory_id,
+      ingredientId,
+      1,
+      quantity_change,
+      notes
+    ]
+  );
+
+  // Print the new transaction ID in the backend terminal.
+  console.log(
+    "Transaction inserted:",
+    transactionResult.insertId
+  );
 
     //Saves quantity update to database
     await connection.commit();
@@ -204,7 +241,7 @@ async function addStock(req, res){
     //Undos update if there is an error at any point of transaction
     await connection.rollback();
     console.error("Error adding stock:", error.message);
-    rest.status(500).json({
+    res.status(500).json({
         error: "An error occurred while adding stock."
     });
 

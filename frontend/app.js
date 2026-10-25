@@ -114,6 +114,16 @@ if(newIngredientForm){
         const quantity = Number(document.getElementById("new-stock-quantity").value);
         const unit = document.getElementById("new-ingredient-unit").value;
 
+        //read description
+        const description = document
+        .getElementById("new-ingredient-description")
+        .value
+        .trim() || null;
+
+        // Read the reorder level
+        const reorderLevel = Number(document.getElementById("new-ingredient-reorder-level").value
+);
+
         //backend auth with firebase
         try{
 
@@ -125,7 +135,8 @@ if(newIngredientForm){
                     "Content-Type": "application/json",
                     Authorization: "Bearer " + token
                 },
-                body: JSON.stringify({ name, quantity, unit, inventory_id: 1 })
+                body: JSON.stringify({ name, quantity, unit, description,
+                reorder_level: reorderLevel, inventory_id: 1 })
             });
 
             const result = await response.json();
