@@ -1,12 +1,13 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BunsCapstone - Ingredients</title>
+    <title>PantrySync - Ingredients</title>
     <link rel="stylesheet" href="/style.css">
-    <script src="/app.js" defer></script>
+    <script type="module" src="/app.js"></script>
 </head>
 <body>
     <header>
@@ -14,11 +15,13 @@
         <nav>
             <a href="/">Home</a>
             <a href="/ingredients">Ingredients</a>
+            <a href="/login.html" id="auth-link">Login</a>
         </nav>
     </header>
 
     <main>
         <h2>Ingredients</h2>
+        <p id="auth-status">Checking login...</p>
 
         <table id="ingredients-table">
             <thead>
@@ -36,6 +39,41 @@
             </tbody>
         </table>
 
+        <section id="add-section" style="margin-top: 30px;" hidden>
+            <h2>Add New Ingredient</h2>
+
+            <form id="add-ingredient-form">
+                <p>
+                    <label for="ingredient-name">Ingredient Name</label><br>
+                    <input id="ingredient-name" type="text"
+                           maxlength="100" required>
+                </p>
+
+                <p>
+                    <label for="ingredient-quantity">Quantity</label><br>
+                    <input id="ingredient-quantity" type="number"
+                           min="0" step="any" required>
+                </p>
+
+                <p>
+                    <label for="ingredient-unit">Unit</label><br>
+                    <select id="ingredient-unit" required>
+                        <option value="">Choose a unit</option>
+                        <option value="kg">Kilograms (kg)</option>
+                        <option value="g">Grams (g)</option>
+                        <option value="L">Liters (L)</option>
+                        <option value="mL">Milliliters (mL)</option>
+                        <option value="count">Count</option>
+                    </select>
+                </p>
+
+                <button type="submit" id="add-button">
+                    Add Ingredient
+                </button>
+            </form>
+
+            <p id="add-message" role="status"></p>
+        </section>
     </main>
 </body>
 </html>
