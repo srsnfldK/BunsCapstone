@@ -1,25 +1,72 @@
+
+/* PantrySync - Main Stylesheet */
+
 * {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
     background: #f4f7f4;
     color: #25352a;
+    line-height: 1.6;
 }
+
+/* Header and Navigation */
 
 header {
     background: #24382e;
     color: white;
     padding: 24px 6%;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
 }
+
+header h1 {
+    margin: 0 0 15px;
+    font-size: 28px;
+    letter-spacing: 0.3px;
+}
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+nav a {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 9px 16px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+nav a:hover {
+    background: #3b5848;
+}
+
+/* Main Content */
 
 main {
     max-width: 1100px;
-    margin: 32px auto;
-    padding: 0 20px;
+    margin: 40px auto;
+    padding: 0 24px;
 }
+
+main h2 {
+    font-size: 24px;
+    margin: 0 0 18px;
+    color: #24382e;
+}
+
+main p {
+    color: #506055;
+}
+
+/* Dashboard Cards */
 
 .summary {
     display: grid;
@@ -28,44 +75,197 @@ main {
     margin-bottom: 32px;
 }
 
-.card,
-table {
-    background: white;
-    border-radius: 8px;
-}
-
 .card {
-    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .card p {
     font-size: 28px;
     font-weight: bold;
+    color: #24382e;
 }
+
+/* Inventory Table */
 
 table {
     width: 100%;
     border-collapse: collapse;
-    overflow-wrap: anywhere;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-th, td {
+th,
+td {
     text-align: left;
-    padding: 14px;
+    padding: 15px 18px;
     border-bottom: 1px solid #e5eae5;
 }
 
 th {
     background: #e7eee8;
+    color: #24382e;
+    font-size: 14px;
+    font-weight: 700;
 }
 
+td {
+    font-size: 14px;
+}
+
+tbody tr:hover {
+    background: #f7faf7;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Forms */
+
+form {
+    background: white;
+    padding: 28px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    max-width: 600px;
+}
+
+form p {
+    margin: 0 0 20px;
+}
+
+label {
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #24382e;
+}
+
+input,
+select {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #cbd6cd;
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: inherit;
+    background: #ffffff;
+    color: #25352a;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #417b58;
+    box-shadow: 0 0 0 3px rgba(65, 123, 88, 0.12);
+}
+
+/* Buttons and Main Links */
+
+button {
+    background: #356b4b;
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #28563b;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+main > a {
+    display: inline-block;
+    background: #356b4b;
+    color: white;
+    padding: 12px 22px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 12px;
+}
+
+main > a:hover {
+    background: #28563b;
+}
+
+/* Login and Inventory Messages */
+
+#auth-status {
+    font-size: 14px;
+    color: #617467;
+    margin-bottom: 18px;
+}
+
+#add-message,
+#loginMessage {
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 15px;
+}
+
+/* Ingredient Entry Section */
+
+#add-section {
+    margin-top: 35px;
+}
+
+#add-section h2 {
+    margin-bottom: 18px;
+}
+
+/* Mobile Layout */
+
 @media (max-width: 600px) {
+    header {
+        padding: 20px;
+    }
+
+    header h1 {
+        font-size: 24px;
+    }
+
+    nav {
+        gap: 5px;
+    }
+
+    nav a {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    main {
+        margin: 25px auto;
+        padding: 0 15px;
+    }
+
     .summary {
         grid-template-columns: 1fr;
     }
 
-    th, td {
-        padding: 8px;
-        font-size: 13px;
+    form {
+        padding: 20px;
+    }
+
+    th,
+    td {
+        padding: 10px;
+        font-size: 12px;
     }
 }
