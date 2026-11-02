@@ -12,15 +12,17 @@
     <header>
         <h1>Ingredient Inventory</h1>
         <nav>
-            <a href="/">Home</a>
-            <a href="/ingredients">Ingredients</a>
-            <a href="#add-stock">Add Stock</a>
-            <a href="#new-ingredient">New Ingredient</a>
-        </nav>
+    <a href="/">Home</a>
+    <a href="/ingredients">Ingredients</a>
+    <a href="#add-stock">Add Stock</a>
+    <a href="#new-ingredient">New Ingredient</a>
+    <a href="/login.html" id="auth-link">Login</a>
+</nav>
     </header>
 
     <main>
         <h2>Ingredients</h2>
+<p id="auth-status">Checking login...</p>
 
         <table id="ingredients-table">
             <thead>
@@ -38,7 +40,7 @@
             </tbody>
         </table>
 
-        <section id="add-stock">
+        <section id="add-stock" hidden>
             <h2>Add Stock:</h2>
 
             <form id="add-stock-form">
@@ -69,7 +71,7 @@
             <p id="stock-message"></p>
         </section>
 
-        <section id="new-ingredient">
+        <section id="new-ingredient" hidden>
             <h2>New Ingredient:</h2>
             <form id="new-ingredient-form">
                 <label for="new-ingredient-name">Name:</label>

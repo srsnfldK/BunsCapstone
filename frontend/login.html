@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PantrySync - Login</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header>
+        <h1>PantrySync</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/ingredients">Ingredients</a>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Login to PantrySync</h2>
+        <p>Sign in to manage your bakery inventory.</p>
+
+        <form id="loginForm">
+            <label for="email">Email:</label>
+            <input type="email" id="email" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" required>
+
+            <button type="submit">Login</button>
+        </form>
+
+        <p id="loginMessage"></p>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from
+            "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+
+        import {
+            getAuth,
+            signInWithEmailAndPassword
+        } from
+            "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMa6TXMIInBlf9w7HzI2Bc_sBMpj_bmp4",
+            authDomain: "pantrysync-62d6b.firebaseapp.com",
+            projectId: "pantrysync-62d6b",
+            storageBucket: "pantrysync-62d6b.firebasestorage.app",
+            messagingSenderId: "170861286787",
+            appId: "1:170861286787:web:4fbd2e3f468a1817e8d2b6",
+            measurementId: "G-XQL314QS46"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const loginForm = document.getElementById("loginForm");
+        const loginMessage = document.getElementById("loginMessage");
+
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            loginMessage.textContent = "Logging in...";
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+
+                loginMessage.textContent = "Login successful!";
+
+                window.location.href = "/ingredients";
+
+            } catch (error) {
+                console.error("Login failed:", error.code);
+                loginMessage.textContent =
+                    "Login failed. Check your email and password.";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -4,7 +4,8 @@ import { initializeApp } from
 
 import {
     getAuth,
-    onAuthStateChanged
+    onAuthStateChanged,
+    signOut
 } from
     "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
@@ -52,7 +53,7 @@ async function loadIngredients(user) {
     const stockSelect = document.getElementById("stock-ingredient");
 
     if (stockSelect) {
-        
+
         stockSelect.replaceChildren();
 
         const placeholder = document.createElement("option");
@@ -214,6 +215,40 @@ if (stockForm) {
 }
 
 onAuthStateChanged(auth, async (user) => {
+    const authLink = document.getElementById("auth-link");
+    const authStatus = document.getElementById("auth-status");
+    const ingredientTable = document.getElementById("ingredients-body");
+
+    const stockSection = document.getElementById("add-stock");
+    const newIngredientSection = document.getElementById("new-ingredient");
+
+    if (authLink) {
+        authLink.onclick = null;
+        authLink.textContent = user ? "Logout" : "Login";
+        authLink.href = user ? "#" : "/login.html";
+
+        if (user) {
+            authLink.onclick = async (event) => {
+                event.preventDefault();
+                await signOut(auth);
+                window.location.href = "/login.html";
+            };
+        }
+    }
+
+    if (authStatus) {
+        authStatus.textContent = user
+            ? `Signed in as ${user.email}`
+            : "Please log in to view ingredients.";
+    }
+
+    if (stockSection) stockSection.hidden = !user;
+    if (newIngredientSection) newIngredientSection.hidden = !user;
+
+    if (!user && ingredientTable) {
+        ingredientTable.innerHTML =
+            '<tr><td colspan="4">Please log in to view ingredients.</td></tr>';
+    }
     if (!user) {
         console.log("No Firebase user is logged in.");
         return;
@@ -233,5 +268,3 @@ onAuthStateChanged(auth, async (user) => {
         }
     }
 });
-
-

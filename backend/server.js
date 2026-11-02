@@ -57,12 +57,11 @@ async function getIngredients(req, res) {
 // API route for ingredients
 app.get("/api/ingredients", verifyToken, getIngredients);
 
-// Keep the original API route for compatibility
-app.get("/ingredients", verifyToken, getIngredients);
+
 
 // Add an ingredient to MySQL (Firebase login required)
 async function addIngredient(req, res) {
-  const { name, quantity, unit, description = null, 
+  const { name, quantity, unit, description = null,
   reorder_level = 0, inventory_id = 1 } = req.body;
 
   if (
@@ -117,12 +116,12 @@ async function addIngredient(req, res) {
         description
       });
     } catch (error) {
-      
+
       await connection.rollback();
       throw error;
 
     }finally {
-      
+
       connection.release();
 
     }
@@ -262,4 +261,3 @@ app.post("/ingredients", verifyToken, addIngredient);
 app.listen(PORT, () => {
   console.log(`PantrySync running at http://localhost:${PORT}`);
 });
-
