@@ -3,32 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BunsCapstone - Recipe Stock Check</title>
+    <title>PantrySync - Recipe Stock Check</title>
     <link rel="stylesheet" href="/style.css">
-    <script src="/recipes.js" defer></script>
+    <script type="module" src="/recipes.js"></script>
 </head>
 <body>
     <header>
-        <h1>Recipe Stock Check</h1>
+        <h1>PantrySync</h1>
         <nav>
             <a href="/">Home</a>
             <a href="/ingredients">Ingredients</a>
             <a href="/recipes">Recipes</a>
+            <a href="/login.html" id="auth-link">Login</a>
         </nav>
     </header>
 
     <main>
-        <h2>Do we have enough to make this?</h2>
+        <h2>Recipe Stock Check</h2>
+        <p id="auth-status">Checking login...</p>
+        <p>Pick a recipe and how many batches you want to make to see if there is enough stock.</p>
 
-        <form id="check-form" class="card check-form">
-            <label>
+        <form id="check-form" class="check-form">
+            <label for="recipe-select">
                 Recipe
                 <select id="recipe-select" required>
                     <option value="">Loading recipes...</option>
                 </select>
             </label>
 
-            <label>
+            <label for="batches">
                 Batches
                 <input id="batches" type="number" min="0.5" step="0.5" value="1" required>
             </label>
