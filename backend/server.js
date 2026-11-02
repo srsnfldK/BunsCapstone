@@ -1,5 +1,4 @@
 
-
 require("dotenv").config();
 
 const express = require("express");
@@ -12,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Serve Eric's frontend files
+// Serve frontend files
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 // PantrySync homepage
@@ -25,13 +24,12 @@ app.get("/login-test.html", (req, res) => {
   res.sendFile(path.join(__dirname, "login-test.html"));
 });
 
-// Eric's ingredients webpage
+// Frontend ingredients page
 app.get("/ingredients", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/ingredients.html"));
 });
 
-// Get ingredients from MySQL
-// Firebase login required
+// Get ingredients from MySQL (Firebase login required)
 async function getIngredients(req, res) {
   try {
     const [ingredients] = await db.query(
@@ -50,27 +48,21 @@ async function getIngredients(req, res) {
     res.json(ingredients);
   } catch (error) {
     console.error("Error loading ingredients:", error.message);
-
     res.status(500).json({
       error: "Unable to load ingredients."
     });
   }
 }
 
-// API route for viewing ingredients
+// API route for ingredients
 app.get("/api/ingredients", verifyToken, getIngredients);
 
-// Add a new ingredient to MySQL
-// Firebase login required
+
+
+// Add an ingredient to MySQL (Firebase login required)
 async function addIngredient(req, res) {
-  const {
-    name,
-    quantity,
-    unit,
-    description = null,
-    reorder_level = 0,
-    inventory_id = 1
-  } = req.body;
+  const { name, quantity, unit, description = null,
+  reorder_level = 0, inventory_id = 1 } = req.body;
 
   if (
     typeof name !== "string" ||
@@ -80,67 +72,84 @@ async function addIngredient(req, res) {
     quantity < 0 ||
     typeof unit !== "string" ||
     !unit.trim() ||
-    typeof reorder_level !== "number" ||
-    !Number.isFinite(reorder_level) ||
-    reorder_level < 0 ||
     !Number.isInteger(inventory_id) ||
     inventory_id < 1
   ) {
     return res.status(400).json({
-      error: "Valid ingredient information is required."
+      error: "Valid name, quantity, unit, and inventory_id are required."
     });
   }
 
-  try {
-    const [result] = await db.execute(
-      `INSERT INTO ingredient
-       (inventory_id, name, quantity, unit, reorder_level, description)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
+  try{
+
+    const connection = await db.getConnection();
+
+    try {
+
+      await connection.beginTransaction();
+
+      const [result] = await connection.execute(
+        `INSERT INTO ingredient
+         (inventory_id, name, quantity, unit, reorder_level, description)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [inventory_id, name.trim(), quantity, unit.trim(), reorder_level, description]
+      );
+
+      if (quantity > 0) {
+        await connection.execute(
+          `INSERT INTO inventory_transaction
+           (inventory_id, ingredient_id, user_id, type, quantity_change, notes)
+           VALUES (?, ?, ?, 'add', ?, ?)`,
+          [inventory_id, result.insertId, 1, quantity, "Initial stock"]
+        );
+      }
+
+      await connection.commit();
+
+      res.status(201).json({
+        id: result.insertId,
         inventory_id,
-        name.trim(),
+        name: name.trim(),
         quantity,
-        unit.trim(),
+        unit: unit.trim(),
         reorder_level,
         description
-      ]
-    );
+      });
+    } catch (error) {
 
-    res.status(201).json({
-      id: result.insertId,
-      inventory_id,
-      name: name.trim(),
-      quantity,
-      unit: unit.trim(),
-      reorder_level,
-      description
-    });
+      await connection.rollback();
+      throw error;
 
-  } catch (error) {
+    }finally {
+
+      connection.release();
+
+    }
+  }catch (error){
+
     console.error("Error adding ingredient:", error.message);
 
     if (error.code === "ER_NO_REFERENCED_ROW_2") {
       return res.status(400).json({
-        error: "The specified inventory does not exist."
+        error: "The specified inventory_id does not exist."
       });
     }
 
     res.status(500).json({
-      error: "Unable to add ingredient."
+      error: "An error occurred while adding the ingredient."
     });
   }
 }
 
-// API route for adding ingredients
-app.post("/api/ingredients", verifyToken, addIngredient);
+// Adding stock to existing ingredient in SQL database (Firebase login required)
+async function addStock(req, res){
 
-// Add stock to an existing ingredient
-// Firebase login required
-async function addStock(req, res) {
-  const ingredientId = Number(req.params.id);
-  const { quantity_change, unit, notes = "" } = req.body;
+    //reading ingredient ID
+    const ingredientId = Number(req.params.id);
+    const {quantity_change, unit, notes = ""} = req.body;
 
-  if (
+    //Validating input
+    if (
     !Number.isInteger(ingredientId) ||
     ingredientId < 1 ||
     typeof quantity_change !== "number" ||
@@ -150,16 +159,17 @@ async function addStock(req, res) {
     !unit.trim()
   ) {
     return res.status(400).json({
-      error: "Invalid ingredient, quantity, or unit."
+      error: "Invalid ingredient, quantity, or unit provided."
     });
   }
 
-  let connection;
+  const connection = await db.getConnection();
 
-  try {
-    connection = await db.getConnection();
+  try{
+
     await connection.beginTransaction();
 
+    //finds the ingredient
     const [ingredients] = await connection.execute(
       `SELECT inventory_id, unit
        FROM ingredient
@@ -168,6 +178,7 @@ async function addStock(req, res) {
       [ingredientId]
     );
 
+    //if ingredient isn't found
     if (ingredients.length === 0) {
       await connection.rollback();
 
@@ -178,16 +189,17 @@ async function addStock(req, res) {
 
     const ingredient = ingredients[0];
 
-    // Unit must match the ingredient's existing unit
-    if (ingredient.unit !== unit.trim()) {
+    //TO BE CHANGED: add functionality for unit conversion
+    //(current functionality) units must match
+    if (ingredient.unit !== unit) {
       await connection.rollback();
 
       return res.status(400).json({
-        error: `This ingredient uses ${ingredient.unit}.`
+        error: `Incorrect unit.This ingredient uses ${ingredient.unit}.`
       });
     }
 
-    // Update the ingredient quantity
+    //adding inputted stock
     await connection.execute(
       `UPDATE ingredient
        SET quantity = quantity + ?
@@ -195,54 +207,57 @@ async function addStock(req, res) {
       [quantity_change, ingredientId]
     );
 
-    // Record the stock transaction
-    await connection.execute(
+    //adding to transaction history
+    const [transactionResult] = await connection.execute(
       `INSERT INTO inventory_transaction
-       (inventory_id, ingredient_id, user_id, type, quantity_change, notes)
-       VALUES (?, ?, ?, 'add', ?, ?)`,
-      [
-        ingredient.inventory_id,
-        ingredientId,
-        1,
-        quantity_change,
-        notes
-      ]
-    );
+      (inventory_id, ingredient_id, user_id, type, quantity_change, notes)
+      VALUES (?, ?, ?, 'add', ?, ?)`,
+    [
+      ingredient.inventory_id,
+      ingredientId,
+      1,
+      quantity_change,
+      notes
+    ]
+  );
 
+  // Print the new transaction ID in the backend terminal.
+  console.log(
+    "Transaction inserted:",
+    transactionResult.insertId
+  );
+
+    //Saves quantity update to database
     await connection.commit();
 
     res.json({
-      message: "Stock added successfully.",
-      ingredient_id: ingredientId,
-      quantity_added: quantity_change
+        message: "Successfully added stock to ingredient.",
+        ingredient_id: ingredientId,
+        quantity_added: quantity_change
     });
+  }catch(error){
 
-  } catch (error) {
-    if (connection) {
-      await connection.rollback();
-    }
-
+    //Undos update if there is an error at any point of transaction
+    await connection.rollback();
     console.error("Error adding stock:", error.message);
-
     res.status(500).json({
-      error: "Unable to add stock."
+        error: "An error occurred while adding stock."
     });
 
-  } finally {
-    if (connection) {
-      connection.release();
-    }
+  }finally{
+    connection.release()
   }
 }
 
-// API route for adding stock
+app.post("/api/ingredients", verifyToken, addIngredient);
+
+//adding stock to ingredient
 app.post("/api/ingredients/:id/stock", verifyToken, addStock);
 
-// Keep original POST route for compatibility
+// Keep the original POST route for compatibility
 app.post("/ingredients", verifyToken, addIngredient);
 
-// Start PantrySync backend
+// Start backend
 app.listen(PORT, () => {
   console.log(`PantrySync running at http://localhost:${PORT}`);
 });
-

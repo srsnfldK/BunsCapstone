@@ -1,5 +1,4 @@
-
-
+//PantrySync Firebase imports
 import { initializeApp } from
     "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 
@@ -10,195 +9,262 @@ import {
 } from
     "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDMa6TXMIInBlf9w7HzI2Bc_sBMpj_bmp4",
-    authDomain: "pantrysync-62d6b.firebaseapp.com",
-    projectId: "pantrysync-62d6b",
-    storageBucket: "pantrysync-62d6b.firebasestorage.app",
-    messagingSenderId: "170861286787",
-    appId: "1:170861286787:web:4fbd2e3f468a1817e8d2b6",
-    measurementId: "G-XQL314QS46"
-};
+// PantrySync Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDMa6TXMIInBlf9w7HzI2Bc_sBMpj_bmp4",
+      authDomain: "pantrysync-62d6b.firebaseapp.com",
+      projectId: "pantrysync-62d6b",
+      storageBucket: "pantrysync-62d6b.firebasestorage.app",
+      messagingSenderId: "170861286787",
+      appId: "1:170861286787:web:4fbd2e3f468a1817e8d2b6",
+      measurementId: "G-XQL314QS46"
+    };
 
-const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
+//connecting and authenticating with firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-let currentUser = null;
+//function for loading backend ingredient data into frontend
+async function loadIngredients(user) {
+    const tableBody = document.getElementById("ingredients-body");
 
-// Get a fresh Firebase token for protected API requests
-async function authenticatedFetch(url, options = {}) {
-    if (!currentUser) {
-        throw new Error("Please log in first.");
+    if (!tableBody) {
+        return;
     }
 
-    const token = await currentUser.getIdToken();
+    //temp firebase token
+    const token = await user.getIdToken();
 
-    return fetch(url, {
-        ...options,
+    const response = await fetch("/api/ingredients", {
         headers: {
-            ...options.headers,
-            Authorization: `Bearer ${token}`
+            Authorization: "Bearer " + token
+        }
+    });
+
+    const ingredients = await response.json();
+
+    if (!response.ok) {
+        throw new Error(ingredients.error);
+    }
+
+    tableBody.replaceChildren();
+
+    //ingredient dropdown for stock form
+    const stockSelect = document.getElementById("stock-ingredient");
+
+    if (stockSelect) {
+
+        stockSelect.replaceChildren();
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select an ingredient";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+
+        stockSelect.appendChild(placeholder);
+
+        // Add every database ingredient to the dropdown.
+        ingredients.forEach((ingredient) => {
+            const option = document.createElement("option");
+
+            option.value = ingredient.id;
+            option.textContent =
+                `${ingredient.name} (${ingredient.quantity} ${ingredient.unit})`;
+
+            stockSelect.appendChild(option);
+        });
+    }
+
+    //creating row for each ingredient
+    ingredients.forEach((ingredient) => {
+        const row = document.createElement("tr");
+
+        [
+            ingredient.id,
+            ingredient.name,
+            ingredient.quantity,
+            ingredient.unit
+        ].forEach((value) => {
+            const cell = document.createElement("td");
+            cell.textContent = value ?? "";
+            row.appendChild(cell);
+        });
+
+        tableBody.appendChild(row);
+    });
+}
+
+//new ingredients function
+const newIngredientForm = document.getElementById("new-ingredient-form");
+if(newIngredientForm){
+
+    newIngredientForm.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
+        const messageElement = document.getElementById("new-ingredient-message");
+        const user = auth.currentUser;
+
+        if (!user) {
+            messageElement.textContent = "You must be logged in to add an ingredient.";
+            return;
+        }
+
+        //reading values entered in the form
+        const name = document.getElementById("new-ingredient-name").value.trim();
+        const quantity = Number(document.getElementById("new-stock-quantity").value);
+        const unit = document.getElementById("new-ingredient-unit").value;
+
+        //read description
+        const description = document
+        .getElementById("new-ingredient-description")
+        .value
+        .trim() || null;
+
+        // Read the reorder level
+        const reorderLevel = Number(document.getElementById("new-ingredient-reorder-level").value
+);
+
+        //backend auth with firebase
+        try{
+
+            const token = await user.getIdToken();
+
+            const response = await fetch("/api/ingredients", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + token
+                },
+                body: JSON.stringify({ name, quantity, unit, description,
+                reorder_level: reorderLevel, inventory_id: 1 })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error);
+            }
+
+            messageElement.textContent = "Ingredient added successfully!";
+            newIngredientForm.reset();
+            await loadIngredients(user);
+
+        }catch (error) {
+            console.error("Error adding ingredient:", error);
+            messageElement.textContent = error.message;
+        }
+    });
+
+}
+
+//Stock form handler
+const stockForm = document.getElementById("add-stock-form");
+if (stockForm) {
+    stockForm.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
+        const messageElement = document.getElementById("stock-message");
+        const user = auth.currentUser;
+
+        if (!user) {
+            messageElement.textContent =
+                "You must be logged in to edit inventory.";
+            return;
+        }
+
+        // Read the selected ingredient and submitted values.
+        const ingredientId = document.getElementById("stock-ingredient").value;
+        const quantityChange = Number(document.getElementById("stock-quantity").value);
+        const unit = document.getElementById("stock-unit").value;
+
+        //backend auth with firebase
+        try {
+
+            const token = await user.getIdToken();
+
+            // Sending the stock update to the backend.
+            const response = await fetch(
+                `/api/ingredients/${ingredientId}/stock`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer " + token
+                    },
+                    body: JSON.stringify({quantity_change: quantityChange,unit})
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error);
+            }
+
+            messageElement.textContent = "Stock added successfully!";
+
+            stockForm.reset();
+
+            await loadIngredients(user);
+        } catch (error) {
+            console.error("Error adding stock:", error);
+            messageElement.textContent = error.message;
         }
     });
 }
 
-// Display ingredients from MySQL
-async function loadIngredients() {
-    const tableBody = document.getElementById("ingredients-body");
-
-    if (!tableBody) return;
-
-    tableBody.innerHTML =
-        '<tr><td colspan="4">Loading ingredients...</td></tr>';
-
-    try {
-        const response = await authenticatedFetch("/api/ingredients");
-
-        if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
-        }
-
-        const ingredients = await response.json();
-        tableBody.replaceChildren();
-
-        if (ingredients.length === 0) {
-            tableBody.innerHTML =
-                '<tr><td colspan="4">No ingredients yet.</td></tr>';
-            return;
-        }
-
-        ingredients.forEach(ingredient => {
-            const row = document.createElement("tr");
-
-            [
-                ingredient.id,
-                ingredient.name,
-                ingredient.quantity,
-                ingredient.unit
-            ].forEach(value => {
-                const cell = document.createElement("td");
-                cell.textContent = value ?? "";
-                row.appendChild(cell);
-            });
-
-            tableBody.appendChild(row);
-        });
-
-    } catch (error) {
-        console.error("Error loading ingredients:", error);
-
-        tableBody.innerHTML =
-            '<tr><td colspan="4">Could not load ingredients.</td></tr>';
-    }
-}
-
-// Add a new ingredient to MySQL
-async function addIngredient(event) {
-    event.preventDefault();
-
-    const form = document.getElementById("add-ingredient-form");
-    const button = document.getElementById("add-button");
-    const message = document.getElementById("add-message");
-
-    const name = document.getElementById("ingredient-name").value.trim();
-    const quantity = Number(
-        document.getElementById("ingredient-quantity").value
-    );
-    const unit = document.getElementById("ingredient-unit").value;
-
-    if (!name || !Number.isFinite(quantity) || quantity < 0 || !unit) {
-        message.textContent = "Please enter valid ingredient information.";
-        return;
-    }
-
-    button.disabled = true;
-    message.textContent = "Adding ingredient...";
-
-    try {
-        const response = await authenticatedFetch("/api/ingredients", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                name,
-                quantity,
-                unit,
-                inventory_id: 1
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(
-                errorData.error || `HTTP error: ${response.status}`
-            );
-        }
-
-        message.textContent = "Ingredient added successfully!";
-        form.reset();
-
-        // Refresh the table automatically
-        await loadIngredients();
-
-    } catch (error) {
-        console.error("Error adding ingredient:", error);
-        message.textContent = `Could not add ingredient: ${error.message}`;
-    } finally {
-        button.disabled = false;
-    }
-}
-
-// Handle Firebase login and logout
-onAuthStateChanged(auth, async user => {
-    currentUser = user;
-
-    const status = document.getElementById("auth-status");
+onAuthStateChanged(auth, async (user) => {
     const authLink = document.getElementById("auth-link");
-    const tableBody = document.getElementById("ingredients-body");
-    const addSection = document.getElementById("add-section");
+    const authStatus = document.getElementById("auth-status");
+    const ingredientTable = document.getElementById("ingredients-body");
+
+    const stockSection = document.getElementById("add-stock");
+    const newIngredientSection = document.getElementById("new-ingredient");
 
     if (authLink) {
         authLink.onclick = null;
+        authLink.textContent = user ? "Logout" : "Login";
+        authLink.href = user ? "#" : "/login.html";
 
         if (user) {
-            authLink.textContent = "Logout";
-            authLink.href = "#";
-
-            authLink.onclick = async event => {
+            authLink.onclick = async (event) => {
                 event.preventDefault();
                 await signOut(auth);
                 window.location.href = "/login.html";
             };
-        } else {
-            authLink.textContent = "Login";
-            authLink.href = "/login.html";
         }
     }
 
-    if (status) {
-        status.textContent = user
+    if (authStatus) {
+        authStatus.textContent = user
             ? `Signed in as ${user.email}`
             : "Please log in to view ingredients.";
     }
 
-    if (addSection) {
-        addSection.hidden = !user;
-    }
+    if (stockSection) stockSection.hidden = !user;
+    if (newIngredientSection) newIngredientSection.hidden = !user;
 
+    if (!user && ingredientTable) {
+        ingredientTable.innerHTML =
+            '<tr><td colspan="4">Please log in to view ingredients.</td></tr>';
+    }
     if (!user) {
-        if (tableBody) {
-            tableBody.innerHTML =
-                '<tr><td colspan="4">Please log in to view ingredients.</td></tr>';
-        }
+        console.log("No Firebase user is logged in.");
         return;
     }
 
-    if (tableBody) {
-        await loadIngredients();
+    try {
+        //will not load ingredients if user is not logged in, will throw error
+        await loadIngredients(user);
+    } catch (error) {
+        console.error("Error loading ingredients:", error);
+
+        const tableBody = document.getElementById("ingredients-body");
+
+        if (tableBody) {
+            tableBody.innerHTML =
+                "<tr><td colspan='4'>Could not load ingredients.</td></tr>";
+        }
     }
 });
-
-// Connect the Add Ingredient form
-document.getElementById("add-ingredient-form")
-    ?.addEventListener("submit", addIngredient);

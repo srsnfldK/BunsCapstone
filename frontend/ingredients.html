@@ -1,11 +1,10 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PantrySync - Ingredients</title>
+    <title>BunsCapstone - Ingredients</title>
     <link rel="stylesheet" href="/style.css">
     <script type="module" src="/app.js"></script>
 </head>
@@ -13,15 +12,17 @@
     <header>
         <h1>Ingredient Inventory</h1>
         <nav>
-            <a href="/">Home</a>
-            <a href="/ingredients">Ingredients</a>
-            <a href="/login.html" id="auth-link">Login</a>
-        </nav>
+    <a href="/">Home</a>
+    <a href="/ingredients">Ingredients</a>
+    <a href="#add-stock">Add Stock</a>
+    <a href="#new-ingredient">New Ingredient</a>
+    <a href="/login.html" id="auth-link">Login</a>
+</nav>
     </header>
 
     <main>
         <h2>Ingredients</h2>
-        <p id="auth-status">Checking login...</p>
+<p id="auth-status">Checking login...</p>
 
         <table id="ingredients-table">
             <thead>
@@ -39,41 +40,72 @@
             </tbody>
         </table>
 
-        <section id="add-section" style="margin-top: 30px;" hidden>
-            <h2>Add New Ingredient</h2>
+        <section id="add-stock" hidden>
+            <h2>Add Stock:</h2>
 
-            <form id="add-ingredient-form">
-                <p>
-                    <label for="ingredient-name">Ingredient Name</label><br>
-                    <input id="ingredient-name" type="text"
-                           maxlength="100" required>
-                </p>
+            <form id="add-stock-form">
+                <label for="stock-ingredient">Ingredient:</label>
+                <select id="stock-ingredient" required>
+                    <option value="">Select an ingredient:</option>
+                </select>
 
-                <p>
-                    <label for="ingredient-quantity">Quantity</label><br>
-                    <input id="ingredient-quantity" type="number"
-                           min="0" step="any" required>
-                </p>
+                <label for="stock-quantity">Quantity amount:</label>
+                <input id="stock-quantity" type="number" min="0.01" step="0.01" required>
 
-                <p>
-                    <label for="ingredient-unit">Unit</label><br>
-                    <select id="ingredient-unit" required>
-                        <option value="">Choose a unit</option>
-                        <option value="kg">Kilograms (kg)</option>
-                        <option value="g">Grams (g)</option>
-                        <option value="L">Liters (L)</option>
-                        <option value="mL">Milliliters (mL)</option>
-                        <option value="count">Count</option>
-                    </select>
-                </p>
+                <label for="stock-unit">Unit:</label>
+                <select id="stock-unit" required>
+                    <option value="" disabled selected>Unit</option>
+                    <option value="g">Grams (g)</option>
+                    <option value="kg">Kilograms (kg)</option>
+                    <option value="oz">Ounces (oz)</option>
+                    <option value="lb">Pounds (lb)</option>
+                    <option value="ct">Count (ct)</option>
+                    <option value="L">Liters (L)</option>
+                    <option value="ml">Milliliters (ml)</option>
+                    <option value="c">Cups (c)</option>
+                </select>
 
-                <button type="submit" id="add-button">
-                    Add Ingredient
-                </button>
+
+                <button type="submit">Submit</button>
+            </form>
+            <p id="stock-message"></p>
+        </section>
+
+        <section id="new-ingredient" hidden>
+            <h2>New Ingredient:</h2>
+            <form id="new-ingredient-form">
+                <label for="new-ingredient-name">Name:</label>
+                <input id="new-ingredient-name" type="text" required>
+
+                <label for="new-stock-quantity">Quantity Amount:</label>
+                <input id="new-stock-quantity" type="number" min="0" step="0.01" required>
+
+                <label for="new-ingredient-unit">Unit:</label>
+
+                <select id="new-ingredient-unit" required>
+                    <option value="" disabled selected>Unit</option>
+                    <option value="g">Grams (g)</option>
+                    <option value="kg">Kilograms (kg)</option>
+                    <option value="oz">Ounces (oz)</option>
+                    <option value="lb">Pounds (lb)</option>
+                    <option value="ct">Count (ct)</option>
+                    <option value="L">Liters (L)</option>
+                    <option value="ml">Milliliters (ml)</option>
+                    <option value="c">Cups (c)</option>
+                </select>
+
+                <label for="new-ingredient-description">Description:</label>
+                <textarea id="new-ingredient-description" placeholder="Optional description"></textarea>
+
+                <label for="new-ingredient-reorder-level">Reorder level:</label>
+                <input id="new-ingredient-reorder-level" type="number" min="0" step="0.01" required>
+
+                <button type="submit">Submit</button>
             </form>
 
-            <p id="add-message" role="status"></p>
+            <p id="new-ingredient-message"></p>
         </section>
+
     </main>
 </body>
 </html>
