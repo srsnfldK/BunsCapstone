@@ -9,6 +9,8 @@ import {
 } from
     "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
+import { maxBatches, shoppingList, shoppingListText } from "./stockTools.js";
+
 // PantrySync Firebase configuration (same as app.js)
 const firebaseConfig = {
     apiKey: "AIzaSyDMa6TXMIInBlf9w7HzI2Bc_sBMpj_bmp4",
@@ -30,6 +32,13 @@ const message = document.getElementById("result-message");
 const table = document.getElementById("check-table");
 const tableBody = document.getElementById("check-body");
 const authStatus = document.getElementById("auth-status");
+const maxBatchesText = document.getElementById("max-batches");
+const shoppingSection = document.getElementById("shopping-list");
+const shoppingItems = document.getElementById("shopping-items");
+const copyButton = document.getElementById("copy-list");
+const copyStatus = document.getElementById("copy-status");
+
+let lastResult = null;
 
 let currentUser = null;
 
@@ -98,6 +107,8 @@ async function checkStock(event) {
 
 function showError(text) {
     table.hidden = true;
+    maxBatchesText.hidden = true;
+    shoppingSection.hidden = true;
     message.className = "message-short";
     message.textContent = text;
 }
@@ -134,6 +145,9 @@ function showResult(data) {
     });
 
     table.hidden = false;
+    lastResult = data;
+    showMaxBatches(data);
+    showShoppingList(data);
 
     if (data.can_make) {
         message.className = "message-ok";
@@ -178,4 +192,61 @@ onAuthStateChanged(auth, async (user) => {
     await loadRecipes();
 });
 
+// "How many batches can I make?"
+function showMaxBatches(data) {
+    const result = maxBatches(data);
+
+    if (!result) {
+        maxBatchesText.hidden = true;
+        return;
+    }
+
+    const names = result.limitedBy.join(" and ");
+    const verb = result.limitedBy.length > 1 ? "run" : "runs";
+
+    maxBatchesText.textContent = result.batches === 0
+        ? `You can't make any batches right now. Not enough ${names}.`
+        : `You can make up to ${result.batches} batch(es) with what's on hand. ` +
+          `${names} ${verb} out first.`;
+    maxBatchesText.hidden = false;
+}
+
+// List of what to buy, only shown when something is short
+function showShoppingList(data) {
+    const items = shoppingList(data);
+    shoppingItems.replaceChildren();
+    copyStatus.textContent = "";
+
+    if (items.length === 0) {
+        shoppingSection.hidden = true;
+        return;
+    }
+
+    items.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.name}: ${item.amount} ${item.unit}`;
+        shoppingItems.appendChild(li);
+    });
+
+    shoppingSection.hidden = false;
+}
+
+// Copy the shopping list so it can be pasted into a text or email
+async function copyShoppingList() {
+    if (!lastResult) {
+        return;
+    }
+
+    const text = shoppingListText(lastResult);
+
+    try {
+        await navigator.clipboard.writeText(text);
+        copyStatus.textContent = "Copied!";
+    } catch (error) {
+        console.error("Copy failed:", error);
+        copyStatus.textContent = "Couldn't copy. Select the list and copy it by hand.";
+    }
+}
+
 form.addEventListener("submit", checkStock);
+copyButton.addEventListener("click", copyShoppingList);
