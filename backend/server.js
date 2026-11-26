@@ -249,10 +249,104 @@ async function addStock(req, res){
   }
 }
 
+//Edit stock function
+async function editStock(req, res) {
+  const ingredientID = Number(req.params.id);
+  const { quantity, notes = "Manual adjustment of stock" } = req.body;
+
+  //validating input
+  if (
+    !Number.isInteger(ingredientID) ||
+    ingredientID < 1 ||
+    typeof quantity !== "number" ||
+    !Number.isFinite(quantity) ||
+    quantity < 0
+  ) {
+    return res.status(400).json({
+      error: "Invalid ingredient ID or quantity provided."
+    });
+  }
+
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    //finds ingredient
+    const [rows] = await connection.execute(
+      `SELECT inventory_id, quantity, unit
+      FROM ingredient
+      WHERE ingredient_id = ?
+      FOR UPDATE`,
+      [ingredientID]
+    );
+
+    if (rows.length === 0) {
+      await connection.rollback();
+
+      return res.status(404).json({
+        error: "Ingredient not found."
+      });
+    }
+
+    const ingredient = rows[0];
+    const oldQuantity = Number(ingredient.quantity);
+    const quantityChange = quantity - oldQuantity;
+
+    // Replace the ingredient's current quantity.
+    await connection.execute(
+      `UPDATE ingredient
+      SET quantity = ?
+      WHERE ingredient_id = ?`,
+      [quantity, ingredientID]
+    );
+
+  // Calculate and record the quantity difference.
+    if (quantityChange !== 0) {
+      await connection.execute(
+      `INSERT INTO inventory_transaction
+      (inventory_id, ingredient_id, user_id, type, quantity_change, notes)
+      VALUES (?, ?, ?, 'adjustment', ?, ?)`,
+      [
+        ingredient.inventory_id,
+        ingredientID,
+        1,
+        quantityChange,
+        notes
+      ]
+    );
+  }
+
+    await connection.commit();
+
+    res.json({
+      message: "Successfully updated stock.",
+      ingredient_id: ingredientID,
+      old_quantity: oldQuantity,
+      new_quantity: quantity,
+      quantity_change: quantityChange,
+      unit: ingredient.unit
+    });
+
+
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error editing stock:", error.message);
+    res.status(500).json({
+      error: "Unable to edit stock."
+    });
+  } finally {
+    connection.release();
+  }
+}
+
 app.post("/api/ingredients", verifyToken, addIngredient);
 
 //adding stock to ingredient
 app.post("/api/ingredients/:id/stock", verifyToken, addStock);
+
+//editing stock of ingredient
+app.put("/api/ingredients/:id/stock", verifyToken, editStock);
 
 // Keep the original POST route for compatibility
 app.post("/ingredients", verifyToken, addIngredient);
