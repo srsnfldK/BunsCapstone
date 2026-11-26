@@ -74,6 +74,31 @@ async function loadIngredients(user) {
 
             stockSelect.appendChild(option);
         });
+
+    //ingredient dropdown for edit stock form
+    const editSelect = document.getElementById("edit-stock-ingredient");
+
+    if (editSelect) {
+        editSelect.replaceChildren();
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select an ingredient";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+
+        editSelect.appendChild(placeholder);
+
+        ingredients.forEach((ingredient) => {
+            const option = document.createElement("option");
+
+            option.value = ingredient.id;
+            option.textContent =
+                `${ingredient.name} (${ingredient.quantity} ${ingredient.unit})`;
+
+            editSelect.appendChild(option);
+    });
+}
     }
 
     //creating row for each ingredient
@@ -158,7 +183,7 @@ if(newIngredientForm){
 
 }
 
-//Stock form handler
+//A stock form handler
 const stockForm = document.getElementById("add-stock-form");
 if (stockForm) {
     stockForm.addEventListener("submit", async (event) => {
@@ -214,12 +239,75 @@ if (stockForm) {
     });
 }
 
+//Edit stock form handler
+const editStockForm = document.getElementById("edit-stock-form");
+
+if (editStockForm) {
+    editStockForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const messageElement =
+            document.getElementById("edit-stock-message");
+
+        const user = auth.currentUser;
+
+        if (!user) {
+            messageElement.textContent =
+                "You must be logged in to edit stock.";
+            return;
+        }
+
+        const ingredientId =
+            document.getElementById("edit-stock-ingredient").value;
+
+        const quantity = Number(
+            document.getElementById("edit-stock-quantity").value
+        );
+
+        try {
+            const token = await user.getIdToken();
+
+            const response = await fetch(
+                `/api/ingredients/${ingredientId}/stock`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer " + token
+                    },
+                    body: JSON.stringify({
+                        quantity,
+                        notes: "Manual stock edit"
+                    })
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error);
+            }
+
+            messageElement.textContent =
+                "Stock updated successfully.";
+
+            editStockForm.reset();
+
+            await loadIngredients(user);
+        } catch (error) {
+            console.error("Error editing stock:", error);
+            messageElement.textContent = error.message;
+        }
+    });
+}
+
 onAuthStateChanged(auth, async (user) => {
     const authLink = document.getElementById("auth-link");
     const authStatus = document.getElementById("auth-status");
     const ingredientTable = document.getElementById("ingredients-body");
 
     const stockSection = document.getElementById("add-stock");
+    const editStockSection = document.getElementById("edit-stock");
     const newIngredientSection = document.getElementById("new-ingredient");
 
     if (authLink) {
@@ -243,6 +331,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     if (stockSection) stockSection.hidden = !user;
+    if (editStockSection) {editStockSection.hidden = !user;}
     if (newIngredientSection) newIngredientSection.hidden = !user;
 
     if (!user && ingredientTable) {
